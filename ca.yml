@@ -1,0 +1,43 @@
+---
+
+- hosts: control_node
+  become: true
+  tasks:
+
+  - name: Install the OpenSSL
+    apt:
+      name: openssl
+      state: latest
+
+  - name: Creating the CA directory
+    file:
+      path: "/etc/ssl"
+      state: directory
+      mode: "0700"
+
+  - name: Generate CA private key
+    openssl_privatekey:
+      path: "/etc/ssl/private/ca_key.key"
+      size: 4096
+      mode: "0700"
+    register: cakey
+
+  - name: Generating the CA certificate
+    openssl_csr:
+      path: "/etc/ssl/private/cacert.csr"
+      privatekey_path: "/etc/ssl/private/ca_key.key"
+      common_name: "karlo"
+      country_name: "PH"
+      email_address: "qkdlsantos@tip.edu.ph"
+    register: ca_csr
+
+  - name: Self-sign the CA cert
+    openssl_certificate:
+      path: "/etc/ssl/ca.crt"
+      csr_path: "/etc/ssl/private/cacert.csr"
+      privatekey_path: "/etc/ssl/private/ca_key.key"
+      provider: selfsigned
+    register: signed_cacert
+
+  - name: Copying the CA cert
+    fetch: src=/etc/ssl/ca.crt dest=/home/santos/Hoa_9.1/ flat=yes
